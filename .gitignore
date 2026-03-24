@@ -3,3 +3,4 @@
 /.vscode/
 /.claude/
 .phpunit.result.cache
+composer.lock
