@@ -9,7 +9,7 @@
 `feature/wpms-improvements` (branched from `master`)
 
 ## Active Ticket
-None — Phase C complete (including C4 safe scoped domain update + standalone `wpms:domain-update`). Awaiting approval to begin Phase D (Code Quality).
+None — all phases complete. See Phase D subtasks below for details.
 
 ## Approval Model
 - **Epic level** (full project): approved once at project start
@@ -28,7 +28,7 @@ None — Phase C complete (including C4 safe scoped domain update + standalone `
 | A | Security Hardening & Bug Fixes | ✅ Done | — |
 | B | Operational Safety Gates | ✅ Done | — |
 | C | Post-Migration Domain Hooks | ✅ Done | — |
-| D | Code Quality & Architecture | ⏳ Not started | — |
+| D | Code Quality & Architecture | ✅ Done | — |
 
 ---
 
@@ -97,14 +97,14 @@ None — Phase C complete (including C4 safe scoped domain update + standalone `
 
 | ID | Task | Status |
 |----|------|--------|
-| D1 | Extract shared methods into `WPMSBaseCommand` base class | ⏳ |
-| D2 | Replace all `echo()` with `$this->log()->notice/warning/error()` | ⏳ |
-| D3 | rsync progress: use `--progress` + parse `to-chk=N/M` in wait callbacks (both get and put) | ⏳ |
-| D4 | Add `--batch` support for comma-delimited or file-based site ID lists | ⏳ |
-| D5 | Complete `wpms:coordinate()` — implement auto-increment stagger logic | ⏳ |
-| D6 | Implement `WPMSInitialize()` — copy shared network config tables | ⏳ |
-| D7 | Add PHPUnit tests for validation, SQL construction, table escaping | ⏳ |
-| D8 | Add `wpms:status` command to show tenant state across environments | ⏳ |
+| D1 | Extract shared methods into `WPMSBaseCommand` base class | ✅ |
+| D2 | Replace all `echo()` with `$this->log()->notice/warning/error()` | ✅ |
+| D3 | rsync progress: use `--progress` + parse `to-chk=N/M` in wait callbacks (both get and put) | ✅ |
+| D4 | Add `--batch` / `--ids-from` option to `wpms:move` for comma-separated or file-based site ID lists | ✅ |
+| D5 | Complete `wpms:coordinate()` — implement auto-increment stagger logic | ✅ |
+| D6 | Implement `WPMSInitialize()` — copy shared network config tables | ✅ |
+| D7 | Add PHPUnit tests for batch parsing, coordinate chunk logic, status helpers | ✅ |
+| D8 | Add `wpms:status` command to show tenant state across environments | ✅ |
 
 ---
 
@@ -129,8 +129,13 @@ None — Phase C complete (including C4 safe scoped domain update + standalone `
 
 | File | Notes |
 |------|-------|
-| [src/Commands/WPMS/MoveSiteCommand.php](src/Commands/WPMS/MoveSiteCommand.php) | Main command — tracked |
-| [src/Commands/WPMS/DeleteSiteCommand.php](src/Commands/WPMS/DeleteSiteCommand.php) | Delete command — A9 bugs fixed, now tracked |
+| [src/Commands/WPMS/WPMSBaseCommand.php](src/Commands/WPMS/WPMSBaseCommand.php) | Abstract base — shared helpers (wakeEnv, db, isLiveEnv, resolveBlogIdFromDomain, runDomainUpdate) |
+| [src/Commands/WPMS/MoveSiteCommand.php](src/Commands/WPMS/MoveSiteCommand.php) | Main command — wpms:move (batch), wpms:rsync*, wpms:initialize, wpms:coordinate |
+| [src/Commands/WPMS/DomainUpdateCommand.php](src/Commands/WPMS/DomainUpdateCommand.php) | Standalone wpms:domain-update command |
+| [src/Commands/WPMS/DeleteSiteCommand.php](src/Commands/WPMS/DeleteSiteCommand.php) | Delete command |
+| [src/Commands/WPMS/StatusCommand.php](src/Commands/WPMS/StatusCommand.php) | wpms:status — tenant state across upstream environments |
+| [src/Services/EipDnsService.php](src/Services/EipDnsService.php) | Optional EIP DNS integration (fromEnv factory) |
+| [tests/unit/](tests/unit/) | PHPUnit unit tests (65 tests, 127 assertions) |
 | [ROADMAP.md](ROADMAP.md) | Full feature roadmap with implementation detail |
 | [SECURITY_REVIEW.md](SECURITY_REVIEW.md) | Full security findings with priority table |
 | [composer.json](composer.json) | Dependencies: `ext-pdo`, `symfony/process:^5.4` |

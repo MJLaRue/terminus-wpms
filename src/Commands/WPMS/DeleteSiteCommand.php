@@ -71,7 +71,7 @@ class DeleteSiteCommand extends WPMSBaseCommand
                 return '`' . str_replace('`', '``', $table) . '`';
             }, $table_list));
             $this->db($site_env)->exec("DROP TABLE IF EXISTS $tables");
-            echo("Successfully dropped " . count($table_list) . " tables\n");
+            $this->log()->notice('Successfully dropped {count} tables.', ['count' => count($table_list)]);
         } catch (PDOException $e) {
             throw new TerminusException('Failed to drop tables: ' . $e->getMessage());
         }

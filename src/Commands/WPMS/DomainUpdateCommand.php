@@ -73,15 +73,18 @@ class DomainUpdateCommand extends WPMSBaseCommand
         $newDomain = trim($new_domain);
 
         if ($oldDomain === $newDomain) {
-            echo("Source and target domains are identical — nothing to do.\r\n");
+            $this->log()->notice('Source and target domains are identical — nothing to do.');
             return;
         }
 
         if ($options['dry-run']) {
-            echo("DRY RUN — domain update for blog_id {$site_id} on {$site_env}:\r\n");
-            echo("  Old domain: {$oldDomain}\r\n");
-            echo("  New domain: {$newDomain}\r\n");
-            echo("DRY RUN complete. No changes made.\r\n");
+            $this->log()->notice(
+                'DRY RUN — domain update for blog_id {id} on {env}:',
+                ['id' => $site_id, 'env' => $site_env]
+            );
+            $this->log()->notice('  Old domain: {old}', ['old' => $oldDomain]);
+            $this->log()->notice('  New domain: {new}', ['new' => $newDomain]);
+            $this->log()->notice('DRY RUN complete. No changes made.');
             return;
         }
 

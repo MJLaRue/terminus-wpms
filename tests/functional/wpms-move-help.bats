@@ -32,3 +32,17 @@
   [ "$status" -eq 0 ]
   [[ "$output" == *"--domain"* ]]
 }
+
+@test "wpms:move --help shows --filesync-mode flag" {
+  skip "Requires a live Terminus installation to run"
+  run terminus help wpms:move
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--filesync-mode"* ]]
+}
+
+@test "wpms:move --help shows --filesync-verbose flag" {
+  skip "Requires a live Terminus installation to run"
+  run terminus help wpms:move
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"--filesync-verbose"* ]]
+}

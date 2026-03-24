@@ -1,2 +1,5 @@
 /vendor/
 /tools/
+/.vscode/
+/.claude/
+.phpunit.result.cache

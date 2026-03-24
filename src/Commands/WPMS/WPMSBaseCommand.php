@@ -36,7 +36,7 @@ abstract class WPMSBaseCommand extends TerminusCommand implements SiteAwareInter
         static $envs;
         if (!isset($envs[$site_env])) {
             $envs[$site_env] = time();
-            echo("Initializing $site_env \r\n");
+            $this->log()->notice('Initializing {env}', ['env' => $site_env]);
             $process = new Process(['terminus', 'env:wake', $site_env]);
             $process->setTimeout(120);
             $process->run();
@@ -147,18 +147,23 @@ abstract class WPMSBaseCommand extends TerminusCommand implements SiteAwareInter
         }
 
         if (empty($siteTableList)) {
-            echo("WARNING: No site-specific tables found for blog_id {$site_id}"
-                . " — skipping search-replace.\r\n");
+            $this->log()->warning(
+                'No site-specific tables found for blog_id {id} — skipping search-replace.',
+                ['id' => $site_id]
+            );
             return;
         }
 
-        echo("Running domain update: '{$oldDomain}' → '{$newDomain}' on {$site_env}...\r\n");
+        $this->log()->notice(
+            "Running domain update: '{old}' → '{new}' on {env}",
+            ['old' => $oldDomain, 'new' => $newDomain, 'env' => $site_env]
+        );
         $tablesCsv = implode(',', $siteTableList);
 
         // Step 1: Dry-run on ALL tables — detect unexpected matches and warn.
         // [\s*{...}\s*] avoids false matches on Terminus [notice] lines and handles
         // pretty-printed (multiline) JSON. [] matches the zero-replacements case.
-        echo("  [dry-run] Scanning all tables for unexpected matches...\r\n");
+        $this->log()->notice('[dry-run] Scanning all tables for unexpected matches...');
         $dryRun = new Process([
             'terminus', 'wp', $site_env, '--',
             'search-replace', $oldDomain, $newDomain,
@@ -169,7 +174,7 @@ abstract class WPMSBaseCommand extends TerminusCommand implements SiteAwareInter
         try {
             $dryRun->run();
         } catch (ProcessTimedOutException $e) {
-            echo("  WARNING: dry-run timed out — proceeding with scoped operations.\r\n");
+            $this->log()->warning('Dry-run timed out — proceeding with scoped operations.');
         }
 
         $dryRunOutput = $dryRun->getOutput();
@@ -189,20 +194,24 @@ abstract class WPMSBaseCommand extends TerminusCommand implements SiteAwareInter
             }
         }
         if (!$parsedOk) {
-            echo("  WARNING: Could not parse dry-run output — proceeding with scoped operations.\r\n");
+            $this->log()->warning(
+                'Could not parse dry-run output — proceeding with scoped operations.'
+            );
         }
         if (!empty($unexpectedTables)) {
-            echo("  WARNING: dry-run found matches outside this blog's tables\r\n");
-            echo("  (network tables are updated via scoped SQL below; others are NOT modified):\r\n");
+            $this->log()->warning(
+                'Dry-run found matches outside this blog\'s tables'
+                . ' (network tables are updated via scoped SQL below; others are NOT modified):'
+            );
             foreach ($unexpectedTables as $tbl => $cnt) {
-                echo("    - {$tbl}: {$cnt} replacement(s)\r\n");
+                $this->log()->warning('  - {table}: {count} replacement(s)', ['table' => $tbl, 'count' => $cnt]);
             }
         }
 
         // Step 2: WP-CLI search-replace scoped to site-specific tables.
         // --url=$oldDomain ensures WP bootstraps correctly before wp_blogs.domain is updated.
         // --network and --all-tables are intentionally omitted.
-        echo("  Updating " . count($siteTableList) . " site tables...\r\n");
+        $this->log()->notice('Updating {count} site tables...', ['count' => count($siteTableList)]);
         $srProcess = new Process([
             'terminus', 'wp', $site_env, '--',
             'search-replace', $oldDomain, $newDomain,
@@ -215,14 +224,20 @@ abstract class WPMSBaseCommand extends TerminusCommand implements SiteAwareInter
             }
         });
         if (!$srProcess->isSuccessful()) {
-            echo("WARNING: search-replace errors: " . trim($srProcess->getErrorOutput()) . "\r\n");
+            $this->log()->warning(
+                'search-replace errors: {err}',
+                ['err' => trim($srProcess->getErrorOutput())]
+            );
         }
 
         // Step 3: Update wp_blogs.domain — exact field update, one row, no substring risk.
         $this->db($site_env)
             ->prepare("UPDATE wp_blogs SET domain = ? WHERE blog_id = ?")
             ->execute([$newDomain, $site_id]);
-        echo("  Updated wp_blogs.domain for blog_id {$site_id}.\r\n");
+        $this->log()->notice(
+            'Updated wp_blogs.domain for blog_id {id}.',
+            ['id' => $site_id]
+        );
 
         // Step 4: Update wp_blogmeta — blog_id-scoped REPLACE, no cross-blog contamination.
         $stmt = $this->db($site_env)->prepare(
@@ -231,7 +246,10 @@ abstract class WPMSBaseCommand extends TerminusCommand implements SiteAwareInter
         $stmt->execute([$oldDomain, $newDomain, $site_id]);
         $count = $stmt->rowCount();
         if ($count > 0) {
-            echo("  Updated {$count} wp_blogmeta row(s) for blog_id {$site_id}.\r\n");
+            $this->log()->notice(
+                'Updated {count} wp_blogmeta row(s) for blog_id {id}.',
+                ['count' => $count, 'id' => $site_id]
+            );
         }
     }
 }
